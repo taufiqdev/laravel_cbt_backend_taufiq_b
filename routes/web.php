@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,17 +17,31 @@ use Illuminate\Support\Facades\Route;
 /* Route::get('/', function () {
     return view('welcome');
 }); */
-Route::get('/', function () {
+/* Route::get('/', function () {
     return view('pages.dashboard');
+}); */
+Route::middleware(['auth'])->group(function () {
+    Route::get('home', function () {
+        return view('pages.dashboard');
+    })->name('home');
+    Route::resource('user', UserController::class);
 });
 
+Route::get('/', function () {
+    return view('pages.auth.login');
+});
+Route::get('/dashboard', function () {
+    return view('pages.dashboard', ['type_menu' => 'dashboard']);
+});
+/* 
 Route::get('/login', function () {
     return view('pages.auth.login');
 });
 Route::get('/register', function () {
     return view('pages.auth.register');
-});
+}); */
 
-Route::get('/dashboard', function () {
-    return view('pages.dashboard', ['type_menu' => 'dashboard']);
-});
+
+/*  Route::get('/users', function () {
+     return view('pages.users.index');
+ }); */
