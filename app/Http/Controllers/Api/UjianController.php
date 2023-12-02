@@ -96,7 +96,9 @@ class UjianController extends Controller
     //get list soal by kategori
     public function getListSoalByKategori(Request $request)
     {
+        //dd($request);
         $ujian = Ujian::where('user_id', $request->user()->id)->first();
+        
         $ujianSoalList = UjianSoalList::where('ujian_id', $ujian->id)->get();
         $soalIds = $ujianSoalList->pluck('soal_id');
 
@@ -120,29 +122,42 @@ class UjianController extends Controller
 
 
         $ujian = Ujian::where('user_id', $request->user()->id)->first();
+        //dd($ujian);
         $ujianSoalList = UjianSoalList::where('ujian_id', $ujian->id)->where('soal_id', $validatedData['soal_id'])->first();
+        //dd($ujianSoalList);
         $soal = Soal::where('id', $validatedData['soal_id'])->first();
-
+        //dd($soal);
         //cek jawaban
-        if ($soal->kunci == $validatedData['jawaban']) {
-            //  $ujianSoalList->kebenaran = true;
-            $ujianSoalList->update(
-                [
-                    'kebenaran' => true
-                ]
-            );
-        } else {
-            // $ujianSoalList->kebenaran = false;
-            $ujianSoalList->update(
-                [
-                    'kebenaran' => false
-                ]
-            );
+        if (!empty($ujianSoalList)) {
+            if ($soal->kunci == $validatedData['jawaban']) {
+                //  $ujianSoalList->kebenaran = true;
+                $ujianSoalList->update(
+                    [
+                        'kebenaran' => true
+                    ]
+                );
+            } else {
+                // $ujianSoalList->kebenaran = false;
+                $ujianSoalList->update(
+                    [
+                        'kebenaran' => false
+                    ]
+                );
+            }
+            
+            return response()->json([
+                'message' => 'Berhasil simpan jawaban',
+                'jawaban' => $ujianSoalList->kebenaran,
+            ]);
+        }
+        else {
+            return response()->json([
+                'message' => 'Soal tidak di assign untuk user !',
+                
+            ]);
+
         }
 
-        return response()->json([
-            'message' => 'Berhasil simpan jawaban',
-            'jawaban' => $ujianSoalList->kebenaran,
-        ]);
+        
     }
 }
