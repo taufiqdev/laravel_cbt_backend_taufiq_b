@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             UjianSeeder::class,
             UjianSoalListSeeder::class,
             ContentSeeder::class,
+            MateriSeeder::class,
         ]);
     }
 }

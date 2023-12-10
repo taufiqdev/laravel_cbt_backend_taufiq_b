@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::create('materis', function (Blueprint $table) {
             $table->id();
+            //title
+            $table->string('title');
+            //content
+            $table->text('content');
+            //image
+            $table->string('image')->nullable();
             $table->timestamps();
         });
     }
