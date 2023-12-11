@@ -96,18 +96,29 @@ class UjianController extends Controller
     //get list soal by kategori
     public function getListSoalByKategori(Request $request)
     {
-        //dd($request);
         $ujian = Ujian::where('user_id', $request->user()->id)->first();
-        
+        if (!$ujian) {
+            return response()->json([
+                'message' => 'Ujian tidak ditemukan',
+                'data' => [],
+            ], 200);
+        }
         $ujianSoalList = UjianSoalList::where('ujian_id', $ujian->id)->get();
         $soalIds = $ujianSoalList->pluck('soal_id');
 
         // dd($soalIds);
 
         $soal = Soal::whereIn('id', $soalIds)->where('kategori', $request->kategori)->get();
-
+        //timer by kategori
+        $timer = $ujian->timer_angka;
+        if ($request->kategori == 'Verbal') {
+            $timer = $ujian->timer_verbal;
+        } else if ($request->kategori == 'Logika') {
+            $timer = $ujian->timer_logika;
+        }
         return response()->json([
             'message' => 'Berhasil mendapatkan soal',
+            'timer' => $timer,
             'data' => SoalResource::collection($soal),
         ]);
     }
@@ -122,42 +133,76 @@ class UjianController extends Controller
 
 
         $ujian = Ujian::where('user_id', $request->user()->id)->first();
-        //dd($ujian);
+        //if ujian not found return empty
+        if (!$ujian) {
+            return response()->json([
+                'message' => 'Ujian tidak ditemukan',
+                'data' => [],
+            ], 200);
+        }
         $ujianSoalList = UjianSoalList::where('ujian_id', $ujian->id)->where('soal_id', $validatedData['soal_id'])->first();
-        //dd($ujianSoalList);
         $soal = Soal::where('id', $validatedData['soal_id'])->first();
-        //dd($soal);
+
         //cek jawaban
-        if (!empty($ujianSoalList)) {
-            if ($soal->kunci == $validatedData['jawaban']) {
-                //  $ujianSoalList->kebenaran = true;
-                $ujianSoalList->update(
-                    [
-                        'kebenaran' => true
-                    ]
-                );
-            } else {
-                // $ujianSoalList->kebenaran = false;
-                $ujianSoalList->update(
-                    [
-                        'kebenaran' => false
-                    ]
-                );
-            }
-            
-            return response()->json([
-                'message' => 'Berhasil simpan jawaban',
-                'jawaban' => $ujianSoalList->kebenaran,
-            ]);
-        }
-        else {
-            return response()->json([
-                'message' => 'Soal tidak di assign untuk user !',
-                
-            ]);
-
+        if ($soal->kunci == $validatedData['jawaban']) {
+            //  $ujianSoalList->kebenaran = true;
+            $ujianSoalList->update(
+                [
+                    'kebenaran' => true
+                ]
+            );
+        } else {
+            // $ujianSoalList->kebenaran = false;
+            $ujianSoalList->update(
+                [
+                    'kebenaran' => false
+                ]
+            );
         }
 
-        
+        return response()->json([
+            'message' => 'Berhasil simpan jawaban',
+            'jawaban' => $ujianSoalList->kebenaran,
+        ], 200);
+    }
+
+    //hitung nilai ujian by kategori
+    public function hitungNilaiUjianByKategori(Request $request)
+    {
+        $kategori = $request->kategori;
+        $ujian = Ujian::where('user_id', $request->user()->id)->first();
+        if (!$ujian) {
+            return response()->json([
+                'message' => 'Ujian tidak ditemukan',
+                'data' => [],
+            ], 200);
+        }
+        $ujianSoalList = UjianSoalList::where('ujian_id', $ujian->id)->get();
+        //ujiansoallist by kategori
+        $ujianSoalList = $ujianSoalList->filter(function ($value, $key) use ($kategori) {
+            return $value->soal->kategori == $kategori;
+        });
+
+        //hitung nilai
+        $totalBenar = $ujianSoalList->where('kebenaran', true)->count();
+        $totalSoal = $ujianSoalList->count();
+        $nilai = ($totalBenar / $totalSoal) * 100;
+
+        $kategori_field = 'nilai_verbal';
+        if ($kategori == 'Numeric') {
+            $kategori_field = 'nilai_angka';
+        } else if ($kategori == 'Logika') {
+            $kategori_field = 'nilai_logika';
+        }
+
+        //update nilai
+        $ujian->update([
+            $kategori_field => $nilai
+        ]);
+
+        return response()->json([
+            'message' => 'Berhasil mendapatkan nilai',
+            'nilai' => $nilai,
+        ], 200);
     }
 }
